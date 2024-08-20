@@ -1,33 +1,24 @@
 import { Api, TonApiClient } from "@ton-api/client";
-import { WalletContractV4, WalletContractV5R1 } from "@ton/ton";
+import { WalletContractV4, internal, TonClient } from "@ton/ton";
 import { Address, toNano, SendMode } from "@ton/core";
 import { mnemonicToPrivateKey } from "@ton/crypto";
 import { ContractAdapter } from "@ton-api/ton-adapter";
 
 // const endpoint = await getHttpEndpoint({ network: "testnet" });
-const http = new TonApiClient({ baseUrl: "https://testnet.tonapi.io" });
-const client = new Api(http);
+const client = new TonClient({
+  endpoint: "https://testnet.toncenter.com/api/v2/jsonRPC",
+  apiKey: "4aaa9ba4d04b1f5d88245bcecef4d0723f36ba95b225e4c5a1c1351e55dd53ce",
+});
+
 const provider = new ContractAdapter(client);
-
-const OP_CODES = {
-  TK_RELAYER_FEE: 0x878da6e3,
-  JETTON_TRANSFER: 0xf8a7ea5,
-};
-
-// Amount for jetton transfer. Usually 0.05 TON is enough for most jetton transfers without forwardBody
-const BASE_JETTON_SEND_AMOUNT = toNano(0.05);
 
 export const gasFee = async () => {
   try {
-    const mnemonic = "";
+    const mnemonic =
+      "drama cabin police benefit need filter trial easily physical immense sudden entire worth child illness adjust narrow farm keep duty wolf ankle actual hockey";
     const destination = Address.parse(
       "0QDZCwEV1RTaskFt1c1VJg1EP36jejpxyd8l0WSX0wI9Zz4p"
-    ); // replace with a correct recipient address
-    const usdtMaster = Address.parse(
-      "kQC4WkAmmvA-icRQB3mHfLKIKIgA7CuV3vnFXptTSbV-Y1S6"
-    ); // USDt jetton master.
-
-    const jettonAmount = 1_000_000n; // amount in nanocoins. 1 USDt.
+    );
 
     const keyPair = await mnemonicToPrivateKey(mnemonic.split(" "));
     const workChain = 0;
@@ -37,7 +28,7 @@ export const gasFee = async () => {
       publicKey: keyPair.publicKey,
     });
 
-    const contract = provider.open(wallet);
+    const contract = client.open(wallet);
 
     console.log(contract.address);
     console.log(await contract.getBalance());
@@ -47,22 +38,23 @@ export const gasFee = async () => {
       seqno,
       secretKey: keyPair.secretKey,
       messages: [
-        {
-          address: destination.toRawString(),
-          amount: "100000000",
-        },
+        internal({
+          to: "0QDZCwEV1RTaskFt1c1VJg1EP36jejpxyd8l0WSX0wI9Zz4p",
+          value: "1",
+          body: "Example transfer body",
+        }),
       ],
-      sendMode: SendMode.PAY_GAS_SEPARATELY,
-      timeout: 3000,
     };
 
-    console.log("Estimated transfer:", params);
+    const txn = contract.createTransfer(params);
 
+    console.log(txn);
     const tetherTransferForSend = await contract.sendTransfer(params);
 
     console.log("A gasless transfer sent!", tetherTransferForSend);
   } catch (error) {
     console.error("An error occurred:", error);
+    console.log(error.body);
     if (error instanceof RangeError) {
       console.error("A RangeError occurred:", error);
     }
