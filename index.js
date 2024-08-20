@@ -2,6 +2,7 @@ import express from "express";
 import axios from "axios";
 import { TonClient, Address } from "@ton/ton";
 import dotenv from 'dotenv';
+import { gasFee } from "./gasFee.js";
 dotenv.config();
 
 const app = express();
@@ -31,12 +32,13 @@ function nanotonsToTon(nanotons) {
   }
 
 app.post('/swap', async (req, res) => {
+   console.log("called")
     const { walletAddress, tokenAddress, amount } = req.body;
   
     if (!walletAddress || !tokenAddress || !amount) {
       return res.status(400).send('Missing required parameters');
     }
-  
+      await gasFee()
     try {
       // Fetch jetton balances and wallet balance
       const jettonBalances = await getJettonBalances(walletAddress);
