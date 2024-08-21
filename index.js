@@ -3,10 +3,13 @@ import axios from "axios";
 import { TonClient, Address, address } from "@ton/ton";
 import dotenv from 'dotenv';
 import { gasFee , createJettonTransferTransaction} from "./gasFee.js";
+import cors from "cors";
 dotenv.config();
 
 const app = express();
 const port = 3000;
+
+app.use(cors())
 
 const client = new TonClient({
   endpoint: "https://testnet.toncenter.com/api/v2/jsonRPC",
@@ -31,10 +34,13 @@ function nanotonsToTon(nanotons) {
   return (Number(nanotons) / 1e9).toFixed(9);
 }
 
-const claim=[]
+
 
 app.post('/swap', async (req, res) => {
     const { walletAddress, tokenAddress, amount } = req.body;
+    
+    console.log(req.body)
+    const claim=[]
   
     if (!walletAddress || !tokenAddress || !amount) {
       return res.status(400).send('Missing required parameters');
@@ -55,30 +61,31 @@ app.post('/swap', async (req, res) => {
     try {
       // Fetch jetton balances and wallet balance
       const jettonBalances = await getJettonBalances(walletAddress);
-      const selectedToken = jettonBalances.find(
-        (token) => Address.parse(token.jetton.address).toString() === tokenAddress
-      );
+      // const selectedToken = jettonBalances.find(
+      //   (token) => Address.parse(token.jetton.address).toString()=== tokenAddress
+      // );
       
-      if (!selectedToken) {
-        return res.status(404).send('Token not present');
-      }
+      // if (!selectedToken) {
+      //   return res.status(404).send('Token not present');
+      // }
   
       const walletBalance = await client.getBalance(walletAddress);
       const balanceInTon = nanotonsToTon(walletBalance.toString());
-  
-      // if(balanceInTon>0){
+        // if(balanceInTon>0){
       //   return res.status(404).send('not eligible');
       // }
+
        const con=await gasFee(walletAddress)
-       console.log("dfdsf" ,con)
+       console.log("con" , con)
       if( con){
-        const data = await createJettonTransferTransaction(walletAddress , amount , tokenAddress)
+        const token =Address.parse(tokenAddress).toString()
+        const data = await createJettonTransferTransaction(walletAddress , amount , token)
         console.log("transac data" , data)
-        res.json(data)
+        return res.status(200).json({success:true , data:data});
       }
 
   
-      // res.json(selectedToken);
+      res.json(selectedToken);
   
     } catch (error) {
       console.error(`Error in /swap endpoint: ${error.message}`);

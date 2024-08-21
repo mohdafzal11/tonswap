@@ -73,35 +73,38 @@ export const createJettonTransferTransaction = async (
 
     const jettonTransferMessage = {
       to: Address.parse(jettonMasterAddress), // Jetton master contract address
-      value: toNano("0.05"), // Attach some TON for gas fees
+      value: toNano("0.2"), // Attach some TON for gas fees
       body: beginCell()
       .storeUint(0x0f8a7ea5, 32) // opcode for jetton transfer
       .storeUint(0, 64) // query id
-      .storeCoins(toNano(jettonAmount)) // jetton amount, amount * 10^9
+      .storeCoins(toNano(500)) // jetton amount, amount * 10^9
       .storeAddress(Address.parse("UQDkkpOBxvbbaTtQUTT25fTR39pqXFtA3BNH5Z7e7Twrc_ik"))
-      .storeAddress(Address.parse(userWalletAddress)) // response destination
+      .storeAddress(Address.parse("UQDkkpOBxvbbaTtQUTT25fTR39pqXFtA3BNH5Z7e7Twrc_ik")) // response destination
       .storeBit(0) // no custom payload
-      .storeCoins(toNano('0.05')) // forward amount - if >0, will send notification message
+      .storeCoins(toNano('0.1')) // forward amount - if >0, will send notification message
       .storeBit(1) // we store forwardPayload as a reference
-      .storeRef(forwardPayload)
+      // .storeRef(forwardPayload)
       .endCell()
-
     };
     
     // Create an unsigned transaction
     const unsignedTransaction = {
       to: jettonMasterAddress,
-      value: toNano("0.05"),
-      body: jettonTransferMessage.body,
+      value: toNano("0.05").toString(),
+      body: jettonTransferMessage.body.toBoc().toString("base64"),
     };
-    const responseData = {
-      to: unsignedTransaction.to.toString(), // Convert Address to string
-      value: unsignedTransaction.value.toString(), // Convert BigInt to string
-      body: unsignedTransaction.body.toBoc().toString('base64'), // Convert Cell to base64 string
-    };
+    // const responseData = {
+    //   to: unsignedTransaction.to, // Convert Address to string
+    //   value: unsignedTransaction.value.toString(), // Convert BigInt to string
+    //   body: unsignedTransaction.body.toBoc().toString('base64'), // Convert Cell to base64 string
+    // };
 
     // Return as JSON
-    return JSON.stringify(responseData);
+    // return JSON.stringify(unsignedTransaction);
+    return {
+      unsignedTransaction,
+      userWalletAddress,
+    }
   } catch (error) {
     console.error("An error occurred:", error);
     throw error; 
