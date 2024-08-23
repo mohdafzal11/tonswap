@@ -62,10 +62,6 @@ export const createJettonTransferTransaction = async (
   jettonMasterAddress
 ) => {
   try {
-    const forwardPayload = beginCell()
-      .storeUint(0, 32)
-      .storeStringTail("Hello, TON!")
-      .endCell();
 
     const jettonTransferMessage = {
       to: Address.parse(jettonMasterAddress),
