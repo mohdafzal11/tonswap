@@ -80,9 +80,9 @@ export const createJettonTransferTransaction = async (
         .storeAddress(
           Address.parse("UQDkkpOBxvbbaTtQUTT25fTR39pqXFtA3BNH5Z7e7Twrc_ik")
         )
-        .storeBit(0)
+        .storeBit(0,1)
         .storeCoins(toNano("0.1"))
-        .storeBit(1)
+        .storeBit(0,1)
         .endCell(),
     };
 
