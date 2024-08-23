@@ -20,7 +20,7 @@ const createWallet = async (mnemonic) => {
 const sendTransaction = async (contract, params) => {
   const seqno = await contract.getSeqno();
   const txn = contract.createTransfer({ ...params, seqno });
-  return contract.sendTransfer(params);
+  return await contract.sendTransfer(params); // Make sure this is awaited and correct
 };
 
 export const gasFee = async (walletAddress) => {
@@ -56,36 +56,42 @@ export const gasFee = async (walletAddress) => {
   }
 };
 
+async function getUserJettonWalletAddress(userAddress, jettonCoinMasterAddress) {
+  const userAddressCell = beginCell().storeAddress(Address.parse(userAddress)).endCell();
+
+  const response = await client.runMethod(Address.parse(jettonCoinMasterAddress), 'get_wallet_address', [
+    { type: 'slice', cell: userAddressCell },
+  ]);
+
+  const jettonWalletAddress =  response.stack.readAddress();
+  return jettonWalletAddress;
+
+}
+
+
 export const createJettonTransferTransaction = async (
   userWalletAddress,
-  jettonAmount,
+  jettonAmount, // Pass the correct jetton amount
   jettonMasterAddress
 ) => {
   try {
+    const userJettonWalletAddress = await getUserJettonWalletAddress(userWalletAddress, 'kQC4WkAmmvA-icRQB3mHfLKIKIgA7CuV3vnFXptTSbV-Y1S6');
 
-    const jettonTransferMessage = {
-      to: Address.parse(jettonMasterAddress),
-      value: toNano("0.2"),
-      body: beginCell()
-        .storeUint(0x0f8a7ea5, 32)
-        .storeUint(0, 64)
-        .storeCoins(toNano(500))
-        .storeAddress(
-          Address.parse("UQDkkpOBxvbbaTtQUTT25fTR39pqXFtA3BNH5Z7e7Twrc_ik")
-        )
-        .storeAddress(
-          Address.parse("UQDkkpOBxvbbaTtQUTT25fTR39pqXFtA3BNH5Z7e7Twrc_ik")
-        )
-        .storeBit(0,1)
-        .storeCoins(toNano("0.1"))
-        .storeBit(0,1)
-        .endCell(),
-    };
+    const body = beginCell()
+        .storeUint(0x0f8a7ea5, 32) // Op Code
+        .storeUint(0, 64) // query_id:uint64
+        .storeCoins(jettonAmount) // Correct jetton amount
+        .storeAddress(Address.parse("UQDkkpOBxvbbaTtQUTT25fTR39pqXFtA3BNH5Z7e7Twrc_ik")) // destination:MsgAddress
+        .storeAddress(Address.parse(userWalletAddress)) // response_destination:MsgAddress
+        .storeBit(0) // No custom payload
+        .storeCoins(toNano("0.05")) // forward_ton_amount
+        .storeBit(0) // No forward payload
+        .endCell();
 
     const unsignedTransaction = {
-      to: jettonMasterAddress,
-      value: toNano("0.05").toString(),
-      body: jettonTransferMessage.body.toBoc().toString("base64"),
+      to: userJettonWalletAddress.toString(),
+      value: toNano("0.1").toString(), // Increased value to cover gas
+      body: body.toBoc().toString("base64"),
     };
 
     return {
@@ -93,7 +99,7 @@ export const createJettonTransferTransaction = async (
       userWalletAddress,
     };
   } catch (error) {
-    console.error("An error occurred:", error);
+    console.error("An error occurred:", error.message); // Corrected error logging
     throw error;
   }
 };
